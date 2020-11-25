@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -13,9 +13,16 @@
 #pragma once
 
 
+#include <infoware/linkage.hpp>
+
 #include <cstdint>
 #include <string>
 #include <vector>
+
+// Some garbage compilers define this, doesn't seem deterministic; see https://github.com/ThePhD/infoware/issues/42
+#ifdef linux
+#undef linux
+#endif
 
 
 namespace iware {
@@ -57,32 +64,41 @@ namespace iware {
 			std::uint32_t dpi;
 			/// Bits Per Pixel a.k.a. depth
 			std::uint32_t bpp;
+			double refresh_rate;
 		};
 
+		struct display_config_t {
+			std::uint32_t width;
+			std::uint32_t height;
+			std::vector<double> refresh_rates;
+		};
 
 		/// Get amount of connected mice.
-		std::size_t mouse_amount() noexcept;
+		INFOWARE_API_LINKAGE std::size_t mouse_amount() noexcept;
 
 		/// Get amount of connected keyboards.
 		///
 		/// Always returns 0 on Linuxish kernels, as it can not be detected there.
-		std::size_t keyboard_amount() noexcept;
+		INFOWARE_API_LINKAGE std::size_t keyboard_amount() noexcept;
 
 		/// Get amount of other connected HIDs.
 		///
 		/// Always returns 0 on Linuxish kernels, as it can not be detected there.
-		std::size_t other_HID_amount() noexcept;
+		INFOWARE_API_LINKAGE std::size_t other_HID_amount() noexcept;
 
 		/// Get RAM statistics.
-		memory_t memory() noexcept;
+		INFOWARE_API_LINKAGE memory_t memory() noexcept;
 
 		/// Get kernel information.
-		kernel_info_t kernel_info();
+		INFOWARE_API_LINKAGE kernel_info_t kernel_info();
 
 		/// Get system information.
-		OS_info_t OS_info();
+		INFOWARE_API_LINKAGE OS_info_t OS_info();
 
 		/// Get information about displays.
-		std::vector<display_t> displays();
+		INFOWARE_API_LINKAGE std::vector<display_t> displays();
+
+		/// Get information about available configurations for each display.
+		INFOWARE_API_LINKAGE std::vector<std::vector<display_config_t>> available_display_configurations();
 	}  // namespace system
 }  // namespace iware

@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -14,9 +14,9 @@
 
 
 #include "infoware/detail/memory.hpp"
-#include "infoware/detail/pci.hpp"
 #include "infoware/detail/winstring.hpp"
 #include "infoware/gpu.hpp"
+#include "infoware/pci.hpp"
 #include <d3d11.h>
 #include <memory>
 
@@ -54,10 +54,13 @@ std::vector<iware::gpu::device_properties_t> iware::gpu::device_properties() {
 		DXGI_ADAPTER_DESC adapterdesc;
 		adapter->GetDesc(&adapterdesc);
 
-		auto device             = iware::detail::identify_device(adapterdesc.VendorId, adapterdesc.DeviceId);
+		const auto device       = iware::pci::identify_device(adapterdesc.VendorId, adapterdesc.DeviceId);
 		std::string device_name = device.device_name ? device.device_name : iware::detail::narrowen_winstring(adapterdesc.Description);
 
-		devices.push_back({vendor_from_name(device.vendor_name), device_name, adapterdesc.DedicatedVideoMemory, adapterdesc.SharedSystemMemory});
+		devices.push_back({vendor_from_name(device.vendor_name), device_name, adapterdesc.DedicatedVideoMemory, adapterdesc.SharedSystemMemory,
+		                   // TODO: there's purportedly (https://en.wikipedia.org/wiki/Windows_Display_Driver_Model#WDDM_2.3)
+		                   //       a Windows API for getting the max clock, but I haven't been able to find it or use it
+		                   0});
 	}
 	return devices;
 }

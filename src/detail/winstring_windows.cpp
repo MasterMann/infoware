@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -10,7 +10,7 @@
 // If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
 
 
-#ifdef WIN32
+#ifdef _WIN32
 
 
 #include "infoware/detail/winstring.hpp"
@@ -23,7 +23,7 @@
 
 static std::string transcode_from_wide(const wchar_t* wstr, std::size_t wstr_size) {
 	std::string ret;
-	// convert even embeded NUL
+	// convert even embedded NUL
 	if(const auto len = WideCharToMultiByte(CP_UTF8, 0, wstr, static_cast<int>(wstr_size), NULL, 0, 0, 0)) {
 		ret.resize(len, '\0');
 		if(!WideCharToMultiByte(CP_UTF8, 0, wstr, static_cast<int>(wstr_size), &ret[0], len, 0, 0))

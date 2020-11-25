@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -18,7 +18,7 @@
 #include <windows.h>
 
 
-std::int64_t iware::cpu::frequency() noexcept {
+std::uint64_t iware::cpu::frequency() noexcept {
 	HKEY hkey;
 	if(RegOpenKeyExA(HKEY_LOCAL_MACHINE, R"(HARDWARE\DESCRIPTION\System\CentralProcessor\0)", 0, KEY_READ, &hkey)) {
 		// Fallback

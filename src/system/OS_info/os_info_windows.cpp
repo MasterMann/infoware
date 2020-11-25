@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -27,7 +27,8 @@
 // Use WIM to acquire Win32_OperatingSystem.Name
 // https://msdn.microsoft.com/en-us/library/aa390423(v=vs.85).aspx
 static std::string version_name() {
-	if(FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED)))
+	auto err = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	if(FAILED(err) && err != RPC_E_CHANGED_MODE)
 		return {};
 	iware::detail::quickscope_wrapper com_uninitialiser{CoUninitialize};
 

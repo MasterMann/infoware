@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -13,6 +13,8 @@
 #pragma once
 
 
+#include <infoware/linkage.hpp>
+
 #include <functional>
 
 
@@ -22,7 +24,7 @@ namespace iware {
 			std::function<void()> func;
 
 			quickscope_wrapper(const quickscope_wrapper&) = delete;
-			~quickscope_wrapper();
+			INFOWARE_API_LINKAGE_INTERNAL ~quickscope_wrapper();
 		};
 	}  // namespace detail
 }  // namespace iware

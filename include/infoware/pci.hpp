@@ -17,30 +17,23 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 
 namespace iware {
-	namespace gpu {
-		enum class vendor_t {
-			intel,
-			amd,
-			nvidia,
-			microsoft,
-			qualcomm,
-			unknown,
-		};
-
-		struct device_properties_t {
-			vendor_t vendor;
-			std::string name;
-			std::size_t memory_size;
-			std::size_t cache_size;
-			std::uint64_t max_frequency;
+	namespace pci {
+		struct device {
+			const char* vendor_name;
+			const char* device_name;
 		};
 
 
-		/// Returns all GPU's properties.
-		INFOWARE_API_LINKAGE std::vector<device_properties_t> device_properties();
-	}  // namespace gpu
+		/// Get the names for the device with the specified PCI ID from the vendor with the specified PCI ID.
+		///
+		/// If the vendor was not found, both names are nullptr.
+		/// If the vendor was found, but the device wasn't, the device name is nullptr;
+		INFOWARE_API_LINKAGE device identify_device(std::uint64_t vendor_id, std::uint64_t device_id) noexcept;
+
+		/// Get the name the vendor with the specified PCI ID, or nullptr if not found.
+		INFOWARE_API_LINKAGE const char* identify_vendor(std::uint64_t vendor_id) noexcept;
+	}  // namespace pci
 }  // namespace iware

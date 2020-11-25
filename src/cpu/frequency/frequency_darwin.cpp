@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -17,7 +17,7 @@
 #include "infoware/detail/sysctl.hpp"
 
 
-std::int64_t iware::cpu::frequency() noexcept {
+std::uint64_t iware::cpu::frequency() noexcept {
 	const auto ctl_data = iware::detail::sysctl("hw.cpufrequency");
 	if(ctl_data.empty())
 		return 0;

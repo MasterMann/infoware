@@ -1,6 +1,6 @@
 # infoware - C++ System information Library
 #
-# Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+# Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 #
 # To the extent possible under law, the author(s) have dedicated all copyright and related
 # and neighboring rights to this software to the public domain worldwide. This software is
@@ -13,16 +13,9 @@
 cmake_minimum_required(VERSION 3.6.0)
 
 
-find_package(Git)
-execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0 OUTPUT_VARIABLE infoware_version ERROR_QUIET)
-string(STRIP "${infoware_version}" infoware_version)
-if(infoware_version STREQUAL "")
-	set(infoware_version "0.1.0")
-else()
-	string(REPLACE "v" "" infoware_version "${infoware_version}")
-endif()
+set(infoware_version "0.5.5")
 
-project(infoware VERSION ${infoware_version} LANGUAGES CXX)
+project(infoware VERSION "${infoware_version}" LANGUAGES CXX)
 
 
 option(INFOWARE_USE_D3D    "Add public, transitive define to infoware to use Direct 3D for GPU detection."                       OFF)
@@ -34,6 +27,9 @@ option(INFOWARE_USE_X11 "Add public, transitive define to infoware to use X11 fo
 option(INFOWARE_EXAMPLES "Add infoware examples to the build." OFF)
 option(INFOWARE_TESTS    "Input tests for infoware."           OFF)
 
+set(INFOWARE_PCI_IDS_PATH       ""                                   CACHE FILEPATH "pci.ids file to use. Overrides cloning from INFOWARE_PCI_IDS_REPOSITORY.")
+set(INFOWARE_PCI_IDS_REPOSITORY "https://github.com/pciutils/pciids" CACHE STRING
+		"Path/URL to clone a pciids git repository from if override path not supplied. Defaults to https://github.com/pciutils/pciids.")
 
 if(INFOWARE_USE_D3D)
 	if(INFOWARE_USE_OPENCL)
@@ -77,26 +73,60 @@ set_target_properties(infoware PROPERTIES CXX_STANDARD 14
                                           MINSIZEREL_POSTFIX "msr"
                                           RELWITHDEBINFO_POSTFIX "rwdi")
 
-target_compile_definitions(infoware PRIVATE INFOWARE_VERSION="${infoware_version}")
+target_compile_definitions(infoware PRIVATE INFOWARE_VERSION="${infoware_version}"
+                                            INFOWARE_BUILDING=1
+                                    PUBLIC $<$<STREQUAL:$<TARGET_PROPERTY:infoware,TYPE>,SHARED_LIBRARY>:INFOWARE_DLL=1>)
 
 
-# Thanks, @griwes
-if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/pciids/pci.ids")
-	execute_process(COMMAND ${GIT_EXECUTABLE} pull
-	                WORKING_DIRECTORY pciids)
+if(NOT Git_FOUND)  # Could be pre-injected
+	find_package(Git)
+endif()
+
+set(infoware_pci_ids_error "\
+The pci.ids file, downloadable from https://github.com/pciutils/pciids or http://pci-ids.ucw.cz, is required for building infoware, \
+and cloned automatically from that GitHub repository by default.\n\
+To use a local copy, set INFOWARE_PCI_IDS_PATH to its location.")
+if(INFOWARE_PCI_IDS_PATH)
+	if(NOT EXISTS "${INFOWARE_PCI_IDS_PATH}")
+		message(WARNING "The specified pci.ids file INFOWARE_PCI_IDS_PATH=${INFOWARE_PCI_IDS_PATH} doesn't seem to exist.")
+	endif()
+	set(infoware_pci_ids_file "${INFOWARE_PCI_IDS_PATH}")
+elseif(NOT Git_FOUND)
+	message(SEND_ERROR "Couldn't find a usable git executable in the environment, and the CMake variable INFOWARE_PCI_IDS_PATH is empty.\n${infoware_pci_ids_error}")
 else()
-	execute_process(COMMAND ${GIT_EXECUTABLE} clone https://github.com/pciutils/pciids)
+	# Thanks, @griwes
+	set(infoware_pci_ids_file "${CMAKE_CURRENT_BINARY_DIR}/pciids/pci.ids")
+	if(EXISTS "${infoware_pci_ids_file}")
+		execute_process(COMMAND "${GIT_EXECUTABLE}" remote set-url origin "${INFOWARE_PCI_IDS_REPOSITORY}"
+		                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pciids")
+		execute_process(COMMAND "${GIT_EXECUTABLE}" pull
+		                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pciids"
+		                RESULT_VARIABLE infoware_git_pciids_clone_err)
+	else()
+		execute_process(COMMAND "${GIT_EXECUTABLE}" clone "${INFOWARE_PCI_IDS_REPOSITORY}" -- pciids
+		                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+		                RESULT_VARIABLE infoware_git_pciids_clone_err)
+	endif()
+	if(infoware_git_pciids_clone_err)
+		message(SEND_ERROR "Cloning/pulling pciids repository from ${INFOWARE_PCI_IDS_REPOSITORY} failed with ${infoware_git_pciids_clone_err}.\n${infoware_pci_ids_error}")
+	endif()
 endif()
 
 add_executable(infoware_pci_generator tools/pci_generator.cpp)
 set_target_properties(infoware_pci_generator PROPERTIES CXX_STANDARD 14
                                                         CXX_STANDARD_REQUIRED ON
                                                         CXX_EXTENSIONS OFF)
-add_custom_target(infoware_generate_pcis
-                  COMMAND ${CMAKE_COMMAND} -E make_directory infoware_generated/
-                  COMMAND $<TARGET_FILE:infoware_pci_generator> "${CMAKE_CURRENT_BINARY_DIR}/pciids/pci.ids" > "infoware_generated/pci_data.hpp"
-                  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/pciids/pci.ids"
-                  BYPRODUCTS "infoware_generated/pci_data.hpp")
+
+set(INFOWARE_PCI_DATA_HPP pci_data.hpp)
+set(INFOWARE_PCI_DATA_GEN "infoware_generated/${INFOWARE_PCI_DATA_HPP}")
+
+add_custom_command(OUTPUT ${INFOWARE_PCI_DATA_GEN}
+                   COMMAND ${CMAKE_COMMAND} -E make_directory infoware_generated/
+                   COMMAND $<TARGET_FILE:infoware_pci_generator> "${infoware_pci_ids_file}" > "infoware_generated/pci_data.hpp"
+                   DEPENDS "${infoware_pci_ids_file}"
+                   COMMENT "Generating ${INFOWARE_PCI_DATA_HPP}")
+
+add_custom_target(infoware_generate_pcis DEPENDS "${INFOWARE_PCI_DATA_GEN}")
 add_dependencies(infoware infoware_generate_pcis)
 
 
@@ -119,6 +149,11 @@ if(WIN32)
 endif()
 
 
+if(APPLE)
+	target_link_libraries(infoware PRIVATE "-framework CoreFoundation" "-framework CoreGraphics")
+endif()
+
+
 if(INFOWARE_USE_D3D)
 	target_compile_definitions(infoware PUBLIC INFOWARE_USE_D3D)
 	if (WIN32)
@@ -132,7 +167,7 @@ elseif(INFOWARE_USE_OPENGL)
 
 	if(WIN32)
 		target_link_libraries(infoware PUBLIC opengl32)
-	elseif(DARWIN)
+	elseif(NOT DARWIN)
 		target_link_libraries(infoware PUBLIC GL)
 	else()
 		target_link_libraries(infoware PUBLIC "-framework OpenGL")
@@ -140,11 +175,16 @@ elseif(INFOWARE_USE_OPENGL)
 endif()
 
 
-if(INFOWARE_USE_X11)
+if(NOT DARWIN AND INFOWARE_USE_X11)
 	include(FindX11)
 	target_compile_definitions(infoware PUBLIC INFOWARE_USE_X11)
 	target_include_directories(infoware PUBLIC ${X11_INCLUDE_DIR})
 	target_link_libraries(infoware PUBLIC ${X11_LIBRARIES})
+	if(X11_Xrandr_FOUND)
+		target_link_libraries(infoware PUBLIC ${X11_Xrandr_LIB})
+	else()
+		message(FATAL_ERROR "Xrandr is required for infoware")
+	endif()
 endif()
 
 
@@ -185,7 +225,9 @@ include(GNUInstallDirs)
 # Specify where library and headers will be installed
 install(TARGETS infoware
         EXPORT infowareTargets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/infoware)
 target_include_directories(infoware PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

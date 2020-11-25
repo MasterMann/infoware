@@ -1,6 +1,6 @@
 // infoware - C++ System information Library
 //
-// Written in 2016-2019 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
+// Written in 2016-2020 by nabijaczleweli <nabijaczleweli@gmail.com> and ThePhD <phdofthehouse@gmail.com>
 //
 // To the extent possible under law, the author(s) have dedicated all copyright and related
 // and neighboring rights to this software to the public domain worldwide. This software is
@@ -70,13 +70,44 @@ int main() {
 				std::cout << "    #" << (i + 1) << ":\n"
 				          << "      Resolution  : " << display.width << 'x' << display.height << '\n'
 				          << "      DPI         : " << display.dpi << '\n'
-				          << "      Colour depth: " << display.bpp << "b\n";
+				          << "      Colour depth: " << display.bpp << "b\n"
+				          << "      Refresh rate: " << display.refresh_rate << "Hz\n";
+			}
+	}
+
+	{
+		const auto configs = iware::system::available_display_configurations();
+		std::cout << "\n"
+		             "  Display configurations:\n";
+		if(configs.empty())
+			std::cout << "    No displays connected, no detection method enabled, or not supported\n";
+		else
+			for(auto i = 0u; i < configs.size(); ++i) {
+				const auto& display_configs = configs[i];
+				std::cout << "    Display #" << (i + 1) << ":\n";
+
+				for(auto j = 0u; j < display_configs.size(); ++j) {
+					const auto& config = display_configs[j];
+					std::cout << "      #" << (j + 1) << ":\n"
+					          << "        Resolution   : " << config.width << 'x' << config.height << '\n'
+					          << "        Refresh rates: ";
+
+					bool first = true;
+					for(auto rate : config.refresh_rates) {
+						if(first)
+							first = false;
+						else
+							std::cout << ", ";
+
+						std::cout << rate << "Hz";
+					}
+
+					std::cout << '\n';
+				}
 			}
 	}
 
 	std::cout << '\n';
-
-	return 0;
 }
 
 
